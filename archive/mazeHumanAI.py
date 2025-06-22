@@ -8,7 +8,7 @@ from prompt_eng import array_to_ascii
 
 #import LLM
 from google import genai
-API_KEY = "AIzaSyDT0t9FK-e0eau_itO-VNoRLmQ8V1MoA8s"
+API_KEY = "YOUR API KEY"
 client = genai.Client(api_key=API_KEY)
 
 # Initialize Pygame
