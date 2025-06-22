@@ -1,6 +1,5 @@
 import ast
 from prompt_eng import array_to_ascii
-import random
 
 def useLLM(player, maze, client, previous = None):
     player_location = player.get_location()
