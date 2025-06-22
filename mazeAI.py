@@ -114,7 +114,7 @@ def main(player_name: str, player_type: str, LLM: bool) -> None:
             puzzle_attempts += 1
             index = 0
             #number_of_moves = 0
-            player.reset_location()
+            #player.reset_location()
             llm_response = useLLM(player, maze, client, old_response)
         
         try:
@@ -135,7 +135,7 @@ def main(player_name: str, player_type: str, LLM: bool) -> None:
             puzzle_attempts += 1
             index = 0
             #number_of_moves = 0
-            player.reset_location()
+            #player.reset_location()
             llm_response = useLLM(player, maze, client)
 
         screen.fill(WHITE)
@@ -152,7 +152,7 @@ def main(player_name: str, player_type: str, LLM: bool) -> None:
             reason = f'Could not solve in {max_number_of_attempts} attempts'
 
         pygame.display.flip()
-        time.sleep(0.25) #uncomment this to display the llm doing actions
+        time.sleep(0.2) #uncomment this to display the llm doing actions
         index += 1
 
     screen.fill(WHITE)
@@ -182,8 +182,8 @@ def main(player_name: str, player_type: str, LLM: bool) -> None:
     with open(filename, 'a', newline='') as f:
         writer = csv.writer(f)
         if not file_exists:
-            writer.writerow(['Name', 'Type', 'Trial', 'Win?', 'Total Time', 'Number of Moves', 'Number of Attempts'])  # Header
-        writer.writerow([player_name, player_type, trial_number, won, end_time - start_time, number_of_moves, puzzle_attempts])
+            writer.writerow(['Name', 'Type', 'Trial', 'Win?', 'Total Time', 'Number of Moves', 'Number of Prompts', "Maze Layout"])  # Header
+        writer.writerow([player_name, player_type, trial_number, won, end_time - start_time, number_of_moves, puzzle_attempts, maze])
 
     screen.blit(time_text, (SCREEN_WIDTH // 2 - time_text.get_width() // 2, SCREEN_HEIGHT // 2 - time_text.get_height() // 2))
     pygame.display.flip()
@@ -192,4 +192,4 @@ def main(player_name: str, player_type: str, LLM: bool) -> None:
     
 
 if __name__ == "__main__":
-    main("Jesse", "Human", LLM=True) #Player types: Human, no context, saved context
+    main("Gemini", "NoContext", LLM=True) #Player types: Human, no context, saved context
