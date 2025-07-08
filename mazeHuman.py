@@ -22,9 +22,7 @@ RED = (255, 0, 0)
 GRAY = (192, 192, 192)
 
 # Create Maze
-def create_maze(seed = None):
-    if seed is not None:
-        random.seed(seed)
+def create_maze():
     maze = [[0] * MAZE_WIDTH for _ in range(MAZE_HEIGHT)]
     # Randomly add obstacles
     for _ in range(10): #200
@@ -64,19 +62,21 @@ class Player:
         return self.x, self.y
 
 # Main function
-def main(player_name: str, player_type: str, useLLM: bool) -> None:
+def main(player_name: str, player_type: str) -> None:
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     font = pygame.font.SysFont(None, 36)
     pygame.display.set_caption("Maze Game")
-    clock = pygame.time.Clock()
 
-    maze = create_maze(12)
+    maze = create_maze()
     # maze is a 2D array, this would be the input
     if maze[0][1] == 1 and maze[1][0] == 1:
-        import sys
         print("Maze is impossible to solve. Ending Script.")
-        sys.exit()
+        return 0
+    if maze[-1][-2] == 1 and maze[-2][-1] == 1:
+        print("Maze is impossible to solve. Ending Script.")
+        return 0
     player = Player()
+    init_location = player.get_location()
 
     running = True
     won = False
@@ -84,6 +84,7 @@ def main(player_name: str, player_type: str, useLLM: bool) -> None:
     #logging information
     start_time = time.time()
     number_of_moves = 0
+    list_of_moves = []
 
     while running:
         for event in pygame.event.get():
@@ -93,12 +94,16 @@ def main(player_name: str, player_type: str, useLLM: bool) -> None:
             elif event.type == pygame.KEYDOWN:
                 number_of_moves = number_of_moves + 1
                 if event.key == pygame.K_UP:
+                    list_of_moves.append('up')
                     player.move(0, -1, maze)
                 elif event.key == pygame.K_DOWN:
+                    list_of_moves.append('down')
                     player.move(0, 1, maze)
                 elif event.key == pygame.K_LEFT:
+                    list_of_moves.append('left')
                     player.move(-1, 0, maze)
                 elif event.key == pygame.K_RIGHT:
+                    list_of_moves.append('right')
                     player.move(1, 0, maze)
 
         screen.fill(WHITE)
@@ -109,7 +114,7 @@ def main(player_name: str, player_type: str, useLLM: bool) -> None:
             running = False
 
         #if timer.is_time_up():
-        max_number_of_moves = 30
+        max_number_of_moves = 150
         if number_of_moves > max_number_of_moves:
             running = False
             reason = f'Maximum Number of Moves Exceeded ({max_number_of_moves})'
@@ -141,18 +146,18 @@ def main(player_name: str, player_type: str, useLLM: bool) -> None:
                     trial_number = 1
 
     # Step 2: Write row
-    file_exists = os.path.isfile(filename)
-    with open(filename, 'a', newline='') as f:
+    file_exists = os.path.isfile('results/'+filename)
+    with open('results/'+filename, 'a', newline='') as f:
         writer = csv.writer(f)
         if not file_exists:
-            writer.writerow(['Name', 'Type', 'Trial', 'Win?', 'Time', 'Number of Moves'])  # Header
-        writer.writerow([player_name, player_type, trial_number, won, end_time - start_time, number_of_moves])
+            writer.writerow(['Name', 'Type', 'Trial', 'Win?', 'Time', 'Number of Moves', "List of Moves", "Maze Layout", "PST end of Sample"])  # Header
+        writer.writerow([player_name, player_type, trial_number, won, end_time - start_time, number_of_moves, list_of_moves, array_to_ascii(maze, init_location).replace("\n", "\\n"), time.localtime()])
 
     screen.blit(time_text, (SCREEN_WIDTH // 2 - time_text.get_width() // 2, SCREEN_HEIGHT // 2 - time_text.get_height() // 2))
     pygame.display.flip()
-    pygame.time.wait(3000)
+    pygame.time.wait(1000)
     pygame.quit()
     
 
 if __name__ == "__main__":
-    main("Jesse", "Human", useLLM=False) #Player types: Human, no context, saved context
+    main("Jesse", "Human") #Player types: Human, no context, saved context

@@ -4,10 +4,9 @@ import random
 import time
 import csv
 import os
-import ast
 import time
-from prompt_eng import array_to_ascii
 from prompt_eng import useLLM
+from prompt_eng import array_to_ascii
 
 #import LLM
 from google import genai
@@ -15,10 +14,11 @@ with open("api_key.txt", "r") as file:
     API_KEY = file.read().strip()
 client = genai.Client(api_key=API_KEY)
 
-
+chat = None #client.chats.create(model="gemma-3-27b-it") #None -- use None when using non chat (One Shot)
 
 # Initialize Pygame
 pygame.init()
+pygame.font.init()
 
 # Constants
 SCREEN_WIDTH = 200 #600
@@ -77,18 +77,20 @@ class Player:
         self.y = 0
 
 # Main function
-def main(player_name: str, player_type: str, LLM: bool) -> None:
+def main(player_name: str, player_type: str, maze: list, chat = None) -> None:
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     font = pygame.font.SysFont(None, 36)
     pygame.display.set_caption("Maze Game")
 
-    maze = create_maze()
     # maze is a 2D array, this would be the input
     if maze[0][1] == 1 and maze[1][0] == 1:
-        import sys
         print("Maze is impossible to solve. Ending Script.")
-        sys.exit()
+        return 0
+    if maze[-1][-2] == 1 and maze[-2][-1] == 1:
+        print("Maze is impossible to solve. Ending Script.")
+        return 0
     player = Player()
+    init_location = player.get_location()
 
     running = True
     won = False
@@ -97,13 +99,13 @@ def main(player_name: str, player_type: str, LLM: bool) -> None:
     start_time = time.time()
     number_of_moves = 0
 
-    if LLM:  # move comes from LLM
-        llm_response = useLLM(player, maze, client)
+    llm_response = useLLM(player, maze, client, llm=player_name, chat=chat)
     
     index = 0
     puzzle_attempts = 1
     number_of_moves = 0
     old_response = []
+    list_of_moves = []
     while running:
         try:
             llm_response[index]
@@ -113,9 +115,7 @@ def main(player_name: str, player_type: str, LLM: bool) -> None:
                 old_response.append(llm_response)
             puzzle_attempts += 1
             index = 0
-            #number_of_moves = 0
-            #player.reset_location()
-            llm_response = useLLM(player, maze, client, old_response)
+            llm_response = useLLM(player, maze, client, llm=player_name, previous = old_response, chat=chat)
         
         try:
             if llm_response[index] == 'up':
@@ -130,13 +130,12 @@ def main(player_name: str, player_type: str, LLM: bool) -> None:
             elif llm_response[index] == 'right':
                 player.move(1, 0, maze)
                 number_of_moves += 1
+            list_of_moves.append(llm_response[index])
         except:
             print("LLM gave undesired output. Next attempt.")
             puzzle_attempts += 1
             index = 0
-            #number_of_moves = 0
-            #player.reset_location()
-            llm_response = useLLM(player, maze, client)
+            llm_response = useLLM(player, maze, client, chat=chat)
 
         screen.fill(WHITE)
         draw_maze(screen, maze)
@@ -145,7 +144,6 @@ def main(player_name: str, player_type: str, LLM: bool) -> None:
             won = True
             running = False
 
-        #if timer.is_time_up():
         max_number_of_attempts = 10
         if puzzle_attempts > max_number_of_attempts:
             running = False
@@ -157,8 +155,10 @@ def main(player_name: str, player_type: str, LLM: bool) -> None:
 
     screen.fill(WHITE)
     if won:
+        reason = 'success'
         time_text = font.render('You won!', True, BLACK)
     else:
+        reason = 'failure'
         time_text = font.render(reason, True, BLACK)
     end_time = time.time()
     
@@ -178,18 +178,23 @@ def main(player_name: str, player_type: str, LLM: bool) -> None:
                     trial_number = 1
 
     # Step 2: Write row
-    file_exists = os.path.isfile(filename)
-    with open(filename, 'a', newline='') as f:
+    file_exists = os.path.isfile('results/'+filename)
+    with open('results/'+filename, 'a', newline='') as f:
         writer = csv.writer(f)
         if not file_exists:
-            writer.writerow(['Name', 'Type', 'Trial', 'Win?', 'Total Time', 'Number of Moves', 'Number of Prompts', "Maze Layout"])  # Header
-        writer.writerow([player_name, player_type, trial_number, won, end_time - start_time, number_of_moves, puzzle_attempts, maze])
+            writer.writerow(['Name', 'Type', 'Trial', 'Win?', 'Total Time', 'Number of Moves', 'LLM Attempts', "List of Moves" "Maze Layout", "PST end of Sample", "Outcome Reason"])  # Header
+        if end_time - start_time < 60 or end_time - start_time > 120:
+            writer.writerow([player_name, player_type, trial_number, won, end_time - start_time, number_of_moves, puzzle_attempts, list_of_moves, array_to_ascii(maze, init_location).replace("\n", "\\n"), time.localtime(), reason])
 
     screen.blit(time_text, (SCREEN_WIDTH // 2 - time_text.get_width() // 2, SCREEN_HEIGHT // 2 - time_text.get_height() // 2))
     pygame.display.flip()
-    pygame.time.wait(3000)
+    pygame.time.wait(1000)
     pygame.quit()
     
 
 if __name__ == "__main__":
-    main("Gemini", "NoContext", LLM=True) #Player types: Human, no context, saved context
+    #llm options: 'gemini-2.5-flash', "gemma-3-4b-it", "gemma-3-12b-it", "gemma-3-27b-it",... more availible 
+    for _ in range(30):
+        pygame.init()
+        fixed_maze = create_maze()
+        main("gemma-3-27b-it", "ZeroShot", fixed_maze) #Player types: Human, no context, saved context

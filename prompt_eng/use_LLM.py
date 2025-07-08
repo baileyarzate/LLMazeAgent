@@ -1,7 +1,9 @@
 import ast
 from prompt_eng import array_to_ascii
+from time import sleep
+from google.genai import types
 
-def useLLM(player, maze, client, previous = None):
+def useLLM(player, maze, client, llm: str = "gemma-3-27b-it", previous = None, chat = None):
     player_location = player.get_location()
     ascii_map = array_to_ascii(maze, player_location)
 
@@ -34,13 +36,26 @@ def useLLM(player, maze, client, previous = None):
 
     Your answer:
     """
-
-    raw_response = client.models.generate_content(
-        model="gemma-3-27b-it",
-        #model = 'gemini-2.5-flash',
-        contents=prompt
-    ).text.strip()
-
+    if not chat:
+        try:
+            raw_response = client.models.generate_content(
+            model=llm,
+            contents=prompt
+        ).text.strip()
+        except:
+            print("RESOURCE EXHAUSTED, will resume in one minute.")
+            sleep(61)
+            raw_response = client.models.generate_content(
+            model=llm,
+            contents=prompt,
+            ).text.strip()
+    else:
+        try: 
+            raw_response = chat.send_message(prompt).text.strip()
+        except:
+            print("RESOURCE EXHAUSTED, will resume in one minute.")
+            sleep(61)
+            raw_response = chat.send_message(prompt).text.strip()
     # Remove triple backticks and language hints if present
     if raw_response.startswith("```"):
         raw_response = raw_response.split("```")[1].strip()  # remove the first code block
