@@ -19,7 +19,7 @@ The focal LLM will be Gemini 2.5 Flash due to low cost.
   - **Hypothesis 4:** On average, the LLM will solve the maze faster and with fewer moves than humans but will not exhibit learning or improvement across trials.
 
 ## Demo
-![LLM Playing Maze Game](sample_video\MazeAgentGIF.gif)
+![LLM Playing Maze Game](sample_video/MazeAgentGIF.gif)
 
 ## Status
 
